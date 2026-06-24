@@ -26,20 +26,34 @@ variable "endpoint_private_access" {
   default     = false
 }
 
-variable "public_access_cidrs" {
-  description = "CIDRs allowed to reach the public API endpoint when enabled"
-  type        = list(string)
-  default     = ["0.0.0.0/0"]
+variable "addons" {
+  type = list(object({
+    name    = string
+    version = string
+    config  = map(any)
+  }))
+  default = [
+    {
+      name    = "kube-proxy"
+      version = "v1.36.0-eksbuild.7"
+      config  = {}
+    },
+    {
+      name    = "vpc-cni"
+      version = "v1.22.1-eksbuild.2"
+      config  = {}
+    },
+    {
+      name    = "coredns"
+      version = "v1.14.3-eksbuild.2"
+      config  = {}
+    }
+  ]
 }
+
 
 variable "cluster_tags" {
   description = "Tags applied to all EKS resources"
   type        = map(string)
   default     = {}
-}
-
-variable "enabled_cluster_log_types" {
-  description = "Control plane log types to send to CloudWatch Logs. Valid values: api, audit, authenticator, controllerManager, scheduler."
-  type        = list(string)
-  default     = ["api", "audit"]
 }

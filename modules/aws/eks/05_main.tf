@@ -31,7 +31,7 @@ resource "aws_eks_cluster" "this" {
   version  = var.cluster_version
   role_arn = aws_iam_role.cluster.arn
 
-  enabled_cluster_log_types = var.enabled_cluster_log_types
+  enabled_cluster_log_types = local.eks_log_types
 
   # ####################
   # access
@@ -48,7 +48,7 @@ resource "aws_eks_cluster" "this" {
     subnet_ids              = var.subnet_ids
     endpoint_public_access  = var.endpoint_public_access
     endpoint_private_access = var.endpoint_private_access
-    public_access_cidrs     = var.endpoint_public_access ? var.public_access_cidrs : null
+    public_access_cidrs     = var.endpoint_public_access ? local.public_access_cidrs : null
   }
 
   tags = merge(
@@ -77,4 +77,17 @@ resource "aws_iam_openid_connect_provider" "oidc" {
     var.cluster_tags,
     { Name = "${var.cluster_name}-oidc" }
   )
+}
+
+# ##############################
+# EKS: add-ons
+# ##############################
+resource "aws_eks_addon" "addons" {
+  for_each                    = { for addon in var.addons : addon.name => addon }
+  cluster_name                = aws_eks_cluster.this.name
+  addon_name                  = each.value.name
+  addon_version               = each.value.version
+  resolve_conflicts_on_create = "OVERWRITE"
+
+  configuration_values = jsonencode(each.value.config)
 }

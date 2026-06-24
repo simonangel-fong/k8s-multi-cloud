@@ -24,15 +24,6 @@ module "eks" {
 }
 
 # ##############################
-# Cilium
-# ##############################
-module "cilium" {
-  source = "../../modules/aws/cilium"
-
-  cluster_endpoint = module.eks.cluster_endpoint
-}
-
-# ##############################
 # EKS Node Group: default
 # ##############################
 module "eks_node_group_default" {
@@ -51,5 +42,4 @@ module "eks_node_group_default" {
 
   tags = local.tags
 
-  depends_on = [module.cilium]
 }

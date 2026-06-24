@@ -5,6 +5,10 @@ terraform -chdir=infra/aws plan
 terraform -chdir=infra/aws apply -auto-approve
 
 terraform -chdir=infra/aws destroy -auto-approve
+
+aws eks delete-addon --cluster-name multi-cloud-k8s-dev --addon-name kube-proxy
+
+ws eks list-addons --cluster-name multi-cloud-k8s-dev
 ```
 
 ---

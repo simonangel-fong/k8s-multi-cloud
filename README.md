@@ -3,7 +3,6 @@
 - [ ] eks
   - [ ] cilium
   - [ ] node
-  - [ ] test cni
 - [ ] app
   - [ ] golang
   - [ ] docker image
