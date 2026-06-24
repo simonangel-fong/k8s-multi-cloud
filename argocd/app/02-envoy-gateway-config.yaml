@@ -1,21 +1,33 @@
 apiVersion: argoproj.io/v1alpha1
-kind: Application
+kind: ApplicationSet
 metadata:
   name: envoy-gateway-config
   namespace: argocd
 spec:
-  project: default
-  source:
-    repoURL: https://github.com/simonangel-fong/k8s-multi-cloud.git
-    targetRevision: master
-    path: argocd/envoy-gateway-config
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: envoy-gateway-system
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-      - ServerSideApply=true
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            workload: demo-api
+  template:
+    metadata:
+      name: 'envoy-gateway-config-{{ .name }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/simonangel-fong/k8s-multi-cloud.git
+        targetRevision: master
+        path: argocd/envoy-gateway-config
+      destination:
+        server: '{{ .server }}'
+        namespace: envoy-gateway-system
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true

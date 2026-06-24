@@ -71,7 +71,7 @@ kubectl get pods -n argocd -w
 # Ctrl-C once all show Running / 1/1
 
 # get initial admin password
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d ; echo
 
 # port-forward the UI
 kubectl -n argocd port-forward svc/argocd-server 8081:443

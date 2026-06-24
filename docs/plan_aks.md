@@ -57,11 +57,21 @@ terraform -chdir=infra/az apply -auto-approve
 
 terraform -chdir=infra/az destroy -auto-approve
 
-az network vnet list --resource-group multi-cloud-k8s-dev
 
-az aks get-credentials --resource-group <rg> --name <cluster>
+az aks get-credentials --resource-group multi-cloud-k8s-dev --name multi-cloud-k8s-dev --overwrite-existing
 kubectl get nodes
+# NAME                             STATUS   ROLES    AGE     VERSION
+# aks-system-22577710-vmss000000   Ready    <none>   8m46s   v1.36.0
+# aks-system-22577710-vmss000001   Ready    <none>   8m43s   v1.36.0
 
-argocd cluster add <aks-context>
+
+argocd login localhost:8081 --username admin   --insecure
+argocd cluster add multi-cloud-k8s-dev --name aks-dev --label cloud=azure --label workload=demo-api -y
+
+argocd cluster list
+# SERVER                                                                NAME           VERSION  STATUS      MESSAGE                                                  PROJECT
+# https://kubernetes.default.svc                                        eks-incluster  v1.34.1  Successful                                                           
+# https://multi-cloud-k8s-dev-3v6hymjq.hcp.canadacentral.azmk8s.io:443  aks-dev                 Unknown     Cluster has no applications and is not being monitored.  
+
 kubectl apply -f argocd/00-root.yaml
 ```
