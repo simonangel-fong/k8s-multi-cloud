@@ -1,0 +1,2 @@
+env         = "dev"
+az_location = "canadacentral"
