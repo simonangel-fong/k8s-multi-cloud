@@ -1,0 +1,10 @@
+env:
+  VERSION: "0.1.0"
+  CLOUD_PROVIDER: "aws"
+
+httpRoute:
+  enabled: true
+  gatewayName: eg
+  gatewayNamespace: envoy-gateway-system
+  hostname: cloud.arguswatcher.net
+  path: /api/
