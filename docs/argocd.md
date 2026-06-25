@@ -14,16 +14,41 @@ Install Argo CD and use the app-of-apps pattern to deploy Envoy Gateway and `dem
 argocd/
   00-root.yaml          # root Application — points at app/
   app/
-    00-clusters.yaml
-    01-envoy-gateway.yaml
-    02-envoy-gateway-config.yaml
-    03-demo-api.yaml    # ApplicationSet (clusters generator)
-  clusters/
-    eks-incluster.yaml  # cluster Secret with labels cloud=aws, workload=demo-api
+    01-envoy-gateway.yaml         # ApplicationSet — Envoy Gateway controller (shared platform)
+    02-envoy-gateway-config.yaml  # ApplicationSet — GatewayClass + Gateway (shared platform)
+    03-demo-api.yaml              # ApplicationSet — demo-api workload (clusters generator)
   envoy-gateway-config/
     gatewayclass.yaml
     gateway.yaml
 ```
+
+> Cluster Secrets are Terraform-managed in [`infra/multi-cloud-kube/07_argocd.tf`](../infra/multi-cloud-kube/07_argocd.tf), not in git as ArgoCD Applications.
+
+## Projects
+
+Three AppProjects scope blast radius and align with change cadence:
+
+| Project           | Purpose                                            | Allowed namespaces        | Cluster-scoped resources |
+| ----------------- | -------------------------------------------------- | ------------------------- | ------------------------ |
+| `platform-system` | Controllers + CRDs (Envoy Gateway, future operators) | `*`                       | Allowed                  |
+| `platform-config` | Shared infra config (GatewayClass, Gateway)        | `envoy-gateway-system`    | Denied                   |
+| `tenant-demo`     | demo-api workload (one project per tenant team)    | `demo-api`, `demo-api-*`  | Denied                   |
+
+Rule of thumb for adding tenants: same team as an existing tenant → reuse the project; different team or audit-isolated env → new `tenant-<name>` project.
+
+## Sync waves
+
+Two-level model. Level 1 controls the order the root app creates the ApplicationSet CRs; Level 2 controls the order their generated child Applications sync into the target cluster.
+
+| Manifest                          | Level 1 (root → ApplicationSet) | Level 2 (template → child App) | Project           |
+| --------------------------------- | ------------------------------- | ------------------------------ | ----------------- |
+| `00-projects.yaml`                | `-1`                            | n/a                            | n/a               |
+| `01-envoy-gateway.yaml`           | `0`                             | `0` (controller + CRDs)        | `platform-system` |
+| `02-envoy-gateway-config.yaml`    | `0`                             | `1` (GatewayClass, Gateway)    | `platform-config` |
+| `03-demo-api.yaml`                | `0`                             | `2` (workload)                 | `tenant-demo`     |
+| Future tenant `04-app-2.yaml`     | `0`                             | `2`                            | `tenant-<team>`   |
+
+Why all tenants share Level 2 wave `2`: sync-wave encodes **dependencies**, not priority. Independent tenants sync in parallel — staggering them serializes bootstrap for no benefit.
 
 ## Goals
 
@@ -96,9 +121,8 @@ argocd app sync root
 
 argocd app list
 # NAME                           CLUSTER                         NAMESPACE             PROJECT  STATUS  HEALTH       SYNCPOLICY  CONDITIONS  REPO                                                    PATH                         TARGET
-# argocd/clusters                https://kubernetes.default.svc  argocd                default  Synced  Healthy      Auto-Prune  <none>      https://github.com/simonangel-fong/k8s-multi-cloud.git  argocd/clusters              master
 # argocd/demo-api-eks-incluster  https://kubernetes.default.svc  demo-api              default  Synced  Healthy      Auto-Prune  <none>      https://github.com/simonangel-fong/k8s-multi-cloud.git  helm/multicloud-demo-api     master
-# argocd/envoy-gateway           https://kubernetes.default.svc  envoy-gateway-system  default  Synced  Healthy      Auto-Prune  <none>      registry-1.docker.io/envoyproxy                                                      v1.2.0
+# argocd/envoy-gateway           https://kubernetes.default.svc  envoy-gateway-system  default  Synced  Healthy      Auto-Prune  <none>      registry-1.docker.io/envoyproxy                                                      v1.8.1
 # argocd/envoy-gateway-config    https://kubernetes.default.svc  envoy-gateway-system  default  Synced  Progressing  Auto-Prune  <none>      https://github.com/simonangel-fong/k8s-multi-cloud.git  argocd/envoy-gateway-config  master
 # argocd/root                    https://kubernetes.default.svc  argocd                default  Synced  Healthy      Auto-Prune  <none>      https://github.com/simonangel-fong/k8s-multi-cloud.git  argocd/app                   master
 ```

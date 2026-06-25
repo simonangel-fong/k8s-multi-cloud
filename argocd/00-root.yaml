@@ -3,8 +3,11 @@ kind: Application
 metadata:
   name: 00-root
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argoproj.io/finalizer
 spec:
   project: default
+  revisionHistoryLimit: 3
   source:
     repoURL: https://github.com/simonangel-fong/k8s-multi-cloud.git
     targetRevision: master
@@ -18,5 +21,11 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
     syncOptions:
       - CreateNamespace=true
