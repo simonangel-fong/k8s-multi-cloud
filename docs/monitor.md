@@ -71,14 +71,14 @@ Same single token is used for all three scopes — it's how Grafana Cloud's "Kub
 
 ## Phases
 
-| #   | Goal                                | Done when                                                                                                                    |
-| --- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| 00  | Grafana Cloud stack                 | Stack created at grafana.com; "Kubernetes" integration page surfaces Prom / Loki / Fleet URLs + usernames + one access token |
-| 01  | Terraform vars + Secret             | `gc_*` vars set in `terraform.tfvars`; `terraform apply` creates `monitoring/grafana-cloud` Secret on EKS                    |
-| 02  | update api to enable metric and log | `demo-api` exposes Prometheus `/metrics`; access logs are JSON on stdout                                                     |
+| #   | Goal                                | Done when                                                                                                                                    |
+| --- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 00  | Grafana Cloud stack                 | Stack created at grafana.com; "Kubernetes" integration page surfaces Prom / Loki / Fleet URLs + usernames + one access token                 |
+| 01  | Terraform vars + Secret             | `gc_*` vars set in `terraform.tfvars`; `terraform apply` creates `monitoring/grafana-cloud` Secret on EKS                                    |
+| 02  | update api to enable metric and log | `demo-api` exposes Prometheus `/metrics`; access logs are JSON on stdout                                                                     |
 | 03  | install alloy via helm              | `helm install` of `grafana/k8s-monitoring` on EKS reaches Ready; `demo-api` `up`/`http_requests_total` and JSON logs appear in Grafana Cloud |
-| 04  | install alloy via helm + arogcd     | confirm in app-of-apps                                                                                                       |
-| 05  | Demo dashboard                      | Out-of-the-box "Kubernetes / Cluster overview" dashboard split by `cluster`; energy panels populated                         |
+| 04  | install alloy via helm + arogcd     | confirm in app-of-apps                                                                                                                       |
+| 05  | Demo dashboard                      | Out-of-the-box "Kubernetes / Cluster overview" dashboard split by `cluster`; energy panels populated                                         |
 
 ---
 
@@ -137,13 +137,13 @@ cd app/demo-api
 $env:VERSION="0.1.0"; $env:CLOUD_PROVIDER="AWS"; go run .
 
 docker compose -f app/docker-compose.yaml up --build -d
-curl -s localhost:8081/api/ 
+curl -s localhost:8081/api/
 # {"app":"k8s-multi-cloud","cloud_provider":"aws","version":"0.1.0"}
 
 # confirm: metric
 curl -s localhost:8081/metrics | grep http_requests_total
 # confirm: log
-docker compose -f app/docker-compose.yaml logs aws | tail -n 5  
+docker compose -f app/docker-compose.yaml logs aws | tail -n 5
 # aws-1  | {"time":"2026-06-26T19:02:25.557336696Z","level":"INFO","msg":"starting demo-api","addr":":8080","version":"0.1.0","cloud_provider":"aws"}
 # aws-1  | {"time":"2026-06-26T19:03:01.615380608Z","level":"INFO","msg":"http_request","method":"GET","route":"/api/","path":"/api/","status":200,"latency_ms":0,"client_ip":"172.19.0.1"}
 
@@ -165,14 +165,13 @@ docker stop multicloud-demo-api
 docker rm multicloud-demo-api
 ```
 
-### Alloy via Helm (phase 03)
-
+### Alloy via Helm - EKS
 
 ```sh
 helm repo add grafana https://grafana.github.io/helm-charts
 helm repo update grafana
 
-helm upgrade --install grafana-k8s-monitoring grafana/k8s-monitoring --version 4.1.6 --namespace monitoring -f helm/k8s-monitoring/values-eks.yaml --rollback-on-failure --timeout 5m
+helm upgrade --install grafana-k8s-monitoring grafana/k8s-monitoring --version 4.1.6 --namespace monitoring -f helm/k8s-monitoring/values-aws.yaml --rollback-on-failure --timeout 5m
 
 helm list -A
 # NAME                                    NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                 APP VERSION
@@ -219,4 +218,16 @@ Uninstall (rollback):
 
 ```sh
 helm uninstall grafana-k8s-monitoring -n monitoring
+```
+
+---
+
+### Alloy via Helm - AKS
+
+```sh
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update grafana
+
+helm upgrade --install grafana-k8s-monitoring grafana/k8s-monitoring --version 4.1.6 --namespace monitoring -f helm/k8s-monitoring/values-az.yaml --rollback-on-failure --timeout 5m
+
 ```
