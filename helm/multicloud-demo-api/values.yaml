@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   repository: simonangelfong/multicloud-demo-api
-  tag: "0.1.0"
+  tag: "0.1.1"
   pullPolicy: IfNotPresent
 
 containerPort: 8080
@@ -12,7 +12,7 @@ service:
   port: 80
 
 env:
-  VERSION: "0.1.0"
+  VERSION: "0.1.1"
   CLOUD_PROVIDER: "local"
 
 probes:
